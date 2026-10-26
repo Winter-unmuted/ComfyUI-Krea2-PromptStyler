@@ -43,6 +43,16 @@ The legacy node is unchanged (same class name, so saved workflows still load). B
 
 Each dropdown only shows values that exist under the choices above it. Every level has `All` (Era: `Any`), so you can stop at any depth. `Era` narrows the style list by the sheet's era label (for example `Contemporary`, `Historical / Contemporary`). In wildcard mode the style is drawn at random from whatever the current Category / Medium / Family / Era selection allows.
 
+Outputs of the new node: `prompt`, `settings`, `style_name`. The prompt is laid out as:
+
+```
+Style: <style name>: <style description>
+Subject: <your text input>
+<shot type, camera, film, lighting, if enabled>
+```
+
+`style_name` is the style actually used (the rolled one in wildcard mode), empty if `Artstyle` is off.
+
 `styles.json` structure:
 
 ```json
@@ -71,7 +81,7 @@ Restart ComfyUI. If the style dropdown doesn't filter by category, hard-refresh 
 ## Usage
 
 1. Add the node: **conditioning/krea2 → Krea2 Prompt Styler**
-2. Connect a string source (e.g. a Primitive/Text node) to the `prompt` input
+2. Connect a string source (e.g. a Primitive/Text node) to the `prompt` input (the new node: optional, the `Subject:` line is left out when nothing is connected)
 3. Connect the `prompt` output to your CLIP Text Encode node
 4. Optional: connect the `settings` output to a "Show Text" node to see exactly which values were used – especially handy in wildcard mode, where it shows the rolled values including the seed
 5. Configure:

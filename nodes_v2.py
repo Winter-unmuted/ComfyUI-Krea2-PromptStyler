@@ -173,8 +173,8 @@ except Exception:
 class Krea2PromptStylerV2:
     CATEGORY = "conditioning/krea2"
     FUNCTION = "build_prompt"
-    RETURN_TYPES = ("STRING", "STRING")
-    RETURN_NAMES = ("prompt", "settings")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("prompt", "settings", "style_name")
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -183,8 +183,6 @@ class Krea2PromptStylerV2:
         cam = _legacy.CAMERAS
         return {
             "required": {
-                "prompt": ("STRING", {"forceInput": True}),
-
                 # ------ Artstyle ------
                 "Artstyle": ("BOOLEAN", {"default": True}),
                 "Category": (CATEGORY_CHOICES, {"default": ALL}),
@@ -228,7 +226,12 @@ class Krea2PromptStylerV2:
                     "tooltip": "Seed for wildcard mode. 'randomize' gives new combinations every "
                                "run, a fixed value makes them reproducible."
                 }),
-            }
+            },
+            "optional": {
+                # Optional link: if nothing is connected (or the text is empty),
+                # the "Subject:" line is left out of the prompt.
+                "prompt": ("STRING", {"forceInput": True}),
+            },
         }
 
     def build_prompt(self, **kwargs):
@@ -272,40 +275,41 @@ class Krea2PromptStylerV2:
             if use_lighting:
                 lighting = rng.choice(cam["lighting"])
 
-        parts = []
+        lines = []
+        style_name = ""
 
-        # ------ 1. Artstyle ------
+        # ------ Line 1: Style ------
         rec = LOOKUP.get(style)
         if use_artstyle and rec:
+            style_name = style
             if full_style_text and rec["text"]:
-                parts.append(f"{style}: {rec['text']}")
+                lines.append(f"Style: {style}: {rec['text']}")
             else:
                 clean = style.replace(" Style", "").replace(" (Generic)", "")
                 clean = re.sub(r" \(v\d+\)$", "", clean)     # drop (v1)/(v2) test suffix
-                parts.append(f"In the style of {clean}.")
+                lines.append(f"Style: In the style of {clean}.")
 
-        # ------ 2. Base prompt ------
+        # ------ Line 2: Subject (the text input) ------
         base = (prompt or "").strip()
         if base:
             if not base.endswith((".", "!", "?")):
                 base += "."
-            parts.append(base)
+            lines.append(f"Subject: {base}")
 
-        # ------ 3. Shot type ------
+        # ------ Line 3: shot type, camera, film, lighting (one line, only if enabled) ------
+        tech = []
         if use_shot_type:
-            parts.append(f"{shot_type.capitalize()}.")
-
-        # ------ 4. Camera ------
+            tech.append(f"{shot_type.capitalize()}.")
         if use_camera:
             c = f"Shot on a {camera_model} with a {focal_length} lens at {aperture}"
             c += _legacy._dof_hint(aperture)
-            parts.append(c + ".")
+            tech.append(c + ".")
             if use_film_stock:
-                parts.append(f"{film_stock} film look.")
-
-        # ------ 5. Lighting ------
+                tech.append(f"{film_stock} film look.")
         if use_lighting:
-            parts.append(f"{lighting.capitalize()}.")
+            tech.append(f"{lighting.capitalize()}.")
+        if tech:
+            lines.append(" ".join(tech))
 
         # ------ settings output ------
         info = []
@@ -326,7 +330,7 @@ class Krea2PromptStylerV2:
             info.append("Camera: off")
         info.append(f"Lighting: {lighting}" if use_lighting else "Lighting: off")
 
-        return (" ".join(parts), "\n".join(info))
+        return ("\n".join(lines), "\n".join(info), style_name)
 
 
 NODE_CLASS_MAPPINGS = {
