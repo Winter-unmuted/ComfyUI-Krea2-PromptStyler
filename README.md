@@ -73,7 +73,7 @@ Style names repeated in the sheet with different text are kept as `Name (v1)`, `
 
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/Gothdir/ComfyUI-Krea2-PromptStyler.git
+git clone https://github.com/Winter-unmuted/ComfyUI-Krea2-PromptStyler.git
 ```
 
 Restart ComfyUI. If the style dropdown doesn't filter by category, hard-refresh your browser (Ctrl+Shift+R) to reload the frontend script.
